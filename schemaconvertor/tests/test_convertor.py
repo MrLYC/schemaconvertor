@@ -224,6 +224,25 @@ class TestSimple(TestCase):
             "3", 4, "6"
         ])
 
+        schema = {
+            "type": "list",
+            "typeOf": {
+                "default": "string",
+                Pair: {
+                    "type": "object",
+                    "properties": {
+                        "key": "string",
+                        "value": "integer"
+                    }
+                }
+            }
+        }
+        cvtr = convertor.SchemaConvertor(schema)
+        self.assertEqual(cvtr(data), [
+            {"key": "1", "value": 2},
+            "3", "4.5", "6"
+        ])
+
         data = range(10)
         schema = {
             "type": "list",

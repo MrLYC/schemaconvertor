@@ -41,7 +41,7 @@ class SchemaConvertor(object):
     def _list_convertor(self, schema, data):
         schemas = schema.get("typeOf", {})
         if schemas:
-            default_schema = schemas.get("default")
+            default_schema = schemas.pop("default", None)
 
             def _get_sub_schema(data):
                 for typ, sch in schemas.iteritems():
