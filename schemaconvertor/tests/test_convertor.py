@@ -198,3 +198,36 @@ class TestSimple(TestCase):
                 "int": 10
             }
         })
+
+    def test_list_type(self):
+        data = [
+            Pair(key=1, value=2),
+            3, 4.5, "6"
+        ]
+        schema = {
+            "type": "list",
+            "typeOf": {
+                (int, str): "string",
+                float: "integer",
+                Pair: {
+                    "type": "object",
+                    "properties": {
+                        "key": "string",
+                        "value": "integer"
+                    }
+                }
+            }
+        }
+        cvtr = convertor.SchemaConvertor(schema)
+        self.assertEqual(cvtr(data), [
+            {"key": "1", "value": 2},
+            "3", 4, "6"
+        ])
+
+        data = range(10)
+        schema = {
+            "type": "list",
+            "items": "string"
+        }
+        cvtr = convertor.SchemaConvertor(schema)
+        self.assertEqual(cvtr(data), map(str, range(10)))

@@ -38,6 +38,25 @@ class SchemaConvertor(object):
         return [
             self._convertor(sub_schema, d) for d in data]
 
+    def _list_convertor(self, schema, data):
+        schemas = schema.get("typeOf", {})
+        if schemas:
+            default_schema = schemas.get("default")
+
+            def _get_sub_schema(data):
+                for typ, sch in schemas.iteritems():
+                    if isinstance(data, typ):
+                        return sch
+                else:
+                    if default_schema is None:
+                        raise TypeError("Unknown type: %s", type(data))
+                return default_schema
+
+            return [
+                self._convertor(_get_sub_schema(d), d) for d in data]
+        else:
+            return self._array_convertor(schema, data)
+
     def _number_convertor(self, schema, data):
         num = types.FloatType(data)
         if num.is_integer():
@@ -59,6 +78,7 @@ class SchemaConvertor(object):
         "dict": _dict_convertor,
         "object": _object_convertor,
         "array": _array_convertor,
+        "list": _list_convertor,
         "null": _null_convertor,
         "raw": _raw_convertor,
     }
