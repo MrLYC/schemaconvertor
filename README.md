@@ -56,7 +56,6 @@ schema = {
 | dict | dict like object |        |
 | object | object |        |
 | array | list | same type of each elements |
-| list | list | mixed type list |
 | null | None |        |
 | raw | raw object | return object directly |
 
@@ -68,13 +67,13 @@ schema = {
 仅在指定**type**为`dict`或`object`时生效，当为`dict`是对应着字典的每一项，为`object`时则对应着每一个属性。
 
 ### items
-仅在指定**type**为`array`或`list`时生效，描述着数组每一项的schema。
+仅在指定**type**为`array`时生效，描述着数组每一项的schema。
 
 ### typeOf
 该项指示如何根据数据元素类型来处理数据：
 ```py
 schema = {
-    "type": "list",
+    "type": "array",
     "items": {
         "typeOf": {
             User: {
