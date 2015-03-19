@@ -1,5 +1,5 @@
 # schemaconvertor
-schemaconvertor提供了一种使用schema来转换对象的方法，通过schema，可以指定该对象序列化的部分和对应的类型。
+schemaconvertor提供了一种使用schema来转换对象的方法，通过schema，可以指定该对象序列化的部分和对应的类型，其结果可以进一步序列化为json。
 
 # Features
 假设有个简单的数据类型`User`：
