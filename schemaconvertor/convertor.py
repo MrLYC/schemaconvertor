@@ -5,68 +5,70 @@ import types
 
 
 def _type_convertor(type_):
-    def _base_convertor(self, schema, data):
+    def _base_convertor(self, data, schema):
         return type_(data)
     return _base_convertor
 
 
+def _get_sub_schema(data, schema):
+    default_schema = schema.get("default")
+    for typ, sch in schema.iteritems():
+        if data is None and type is None:
+            return sch
+        if isinstance(typ, (type, tuple)) and isinstance(data, typ):
+            return sch
+    else:
+        if default_schema is None:
+            raise TypeError("Unknown type: %s", type(data))
+    return default_schema
+
+
 class SchemaConvertor(object):
-    def _convertor(self, schema, data):
-        type_ = schema if isinstance(schema, (str, unicode)) \
+    def _convertor(self, data, schema):
+        is_short_schema = isinstance(schema, (str, unicode))
+
+        if not is_short_schema:
+            schemas = schema.get("typeOf")
+            if schemas:
+                return self._convertor(
+                    data, _get_sub_schema(data, schemas))
+
+        type_ = schema if is_short_schema \
             else schema.get("type", self.DEFAULT_TYPE)
 
         convertor = self.CONVERTORS.get(type_)
         if convertor is None:
             raise TypeError("Unknown type: %s" % type_)
 
-        return convertor(self, schema, data)
+        return convertor(self, data, schema)
 
-    def _dict_convertor(self, schema, data):
+    def _dict_convertor(self, data, schema):
         properties = schema.get("properties", {})
         return {
-            k: self._convertor(s, data[k])
+            k: self._convertor(data[k], s)
             for k, s in properties.iteritems()}
 
-    def _object_convertor(self, schema, data):
+    def _object_convertor(self, data, schema):
         properties = schema.get("properties", {})
         return {
-            k: self._convertor(s, getattr(data, k))
+            k: self._convertor(getattr(data, k), s)
             for k, s in properties.iteritems()}
 
-    def _array_convertor(self, schema, data):
+    def _array_convertor(self, data, schema):
         sub_schema = schema.get("items", {})
         return [
-            self._convertor(sub_schema, d) for d in data]
+            self._convertor(d, sub_schema) for d in data]
 
-    def _list_convertor(self, schema, data):
-        schemas = schema.get("typeOf", {})
-        if schemas:
-            default_schema = schemas.pop("default", None)
-
-            def _get_sub_schema(data):
-                for typ, sch in schemas.iteritems():
-                    if isinstance(data, typ):
-                        return sch
-                else:
-                    if default_schema is None:
-                        raise TypeError("Unknown type: %s", type(data))
-                return default_schema
-
-            return [
-                self._convertor(_get_sub_schema(d), d) for d in data]
-        else:
-            return self._array_convertor(schema, data)
-
-    def _number_convertor(self, schema, data):
+    def _number_convertor(self, data, schema):
         num = types.FloatType(data)
         if num.is_integer():
             num = int(num)
         return num
 
-    def _null_convertor(self, schema, data):
+    def _null_convertor(self, data, schema):
         return None
 
-    def _raw_convertor(self, schema, data):
+    def _raw_convertor(self, data, schema):
         return data
 
     CONVERTORS = {
@@ -78,7 +80,6 @@ class SchemaConvertor(object):
         "dict": _dict_convertor,
         "object": _object_convertor,
         "array": _array_convertor,
-        "list": _list_convertor,
         "null": _null_convertor,
         "raw": _raw_convertor,
     }
@@ -88,7 +89,7 @@ class SchemaConvertor(object):
         self.schema = schema
 
     def __call__(self, data):
-        return self._convertor(self.schema, data)
+        return self._convertor(data, self.schema)
 
 
 def to_dict_by_schema(data, schema):

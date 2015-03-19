@@ -199,21 +199,23 @@ class TestSimple(TestCase):
             }
         })
 
-    def test_list_type(self):
+    def test_mixing_type(self):
         data = [
             Pair(key=1, value=2),
             3, 4.5, "6"
         ]
         schema = {
-            "type": "list",
-            "typeOf": {
-                (int, str): "string",
-                float: "integer",
-                Pair: {
-                    "type": "object",
-                    "properties": {
-                        "key": "string",
-                        "value": "integer"
+            "type": "array",
+            "items": {
+                "typeOf": {
+                    (int, str): "string",
+                    float: "integer",
+                    Pair: {
+                        "type": "object",
+                        "properties": {
+                            "key": "string",
+                            "value": "integer"
+                        }
                     }
                 }
             }
@@ -225,14 +227,16 @@ class TestSimple(TestCase):
         ])
 
         schema = {
-            "type": "list",
-            "typeOf": {
-                "default": "string",
-                Pair: {
-                    "type": "object",
-                    "properties": {
-                        "key": "string",
-                        "value": "integer"
+            "type": "array",
+            "items": {
+                "typeOf": {
+                    "default": "string",
+                    Pair: {
+                        "type": "object",
+                        "properties": {
+                            "key": "string",
+                            "value": "integer"
+                        }
                     }
                 }
             }
@@ -243,10 +247,22 @@ class TestSimple(TestCase):
             "3", "4.5", "6"
         ])
 
-        data = range(10)
         schema = {
-            "type": "list",
-            "items": "string"
+            "type": "object",
+            "properties": {
+                "key": "string",
+                "value": {
+                    "typeOf": {
+                        int: "float",
+                        str: "integer",
+                        float: {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
         cvtr = convertor.SchemaConvertor(schema)
-        self.assertEqual(cvtr(data), map(str, range(10)))
+        self.assertEqual(cvtr(Pair("test", 1)), {'key': 'test', 'value': 1.0})
+        self.assertEqual(cvtr(Pair("test", "2")), {'key': 'test', 'value': 2})
+        self.assertEqual(cvtr(Pair("test", 3.4)), {'key': 'test', 'value': "3.4"})

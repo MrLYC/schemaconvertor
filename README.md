@@ -12,13 +12,13 @@ User = namedtuple("User", ["name", "password", "age"])
 可以通过指定schema来转换对象：
 ```py
 schema = {
-	"type": "object",
+    "type": "object",
     "properties": {
-    	"name": {
-        	"type": "string"
+        "name": {
+            "type": "string"
         },
         "age": {
-        	"type": "integer"
+            "type": "integer"
         }
     }
 }
@@ -37,9 +37,9 @@ print to_dict_by_schema(user, schema)
 当仅有**type**一项时，可以将schema省略表示为：
 ```py
 schema = {
-	"type": "object",
+    "type": "object",
     "properties": {
-    	"name": "string",
+        "name": "string",
         "age": "integer"
     }
 }
@@ -71,17 +71,33 @@ schema = {
 仅在指定**type**为`array`或`list`时生效，描述着数组每一项的schema。
 
 ### typeOf
-仅在指定**type**为`list`时生效，该项指示如何根据数据元素类型来处理数据：
+该项指示如何根据数据元素类型来处理数据：
 ```py
 schema = {
-	"type": "list",
-    "typeOf": {
-    	User: {
-            "name": "string",
-            "age": "integer"
-        },
-        (int, float): "float",
-        "default": "string"
+    "type": "list",
+    "items": {
+        "typeOf": {
+            User: {
+                "name": "string",
+                "age": "integer"
+            },
+            (int, float): "float",
+            "default": "string"
+        }
+    }
+}
+
+schema = {
+    "type": "object",
+    "properties": {
+        "key": "string",
+        "value": {
+            "typeOf": {
+                int: "float",
+                str: "integer",
+                float: "string"
+            }
+        }
     }
 }
 ```
