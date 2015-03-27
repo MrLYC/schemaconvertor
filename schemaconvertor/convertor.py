@@ -17,6 +17,7 @@ def _type_convertor(type_):
 
 SchemaVersionError = type("SchemaVersionError", (ValueError,), {})
 FieldTypeError = type("FieldTypeError", (TypeError,), {})
+FieldMissError = type("FieldMissError", (KeyError,), {})
 
 
 class ObjectAsDict(object):
@@ -28,6 +29,9 @@ class ObjectAsDict(object):
 
     def __setitem__(self, name, value):
         setattr(self.__object, name, value)
+
+    def __iter__(self):
+        return iter(dir(self.__object))
 
 
 class SchemaConst(object):
@@ -42,10 +46,10 @@ class SchemaConst(object):
     T_LIST = "array"
     T_NULL = "null"
     T_RAW = "raw"
+    T_DEFAULT = T_STR
 
     # schema fields
     F_TYPE = "type"
-    F_SOURCE = "source"
     F_VERSION = "version"
     F_DEFAULT = "default"
     F_PROPERTIES = "properties"
@@ -62,60 +66,71 @@ class Schema(object):
             schema = {"type": schema}
 
         self.version = schema.get(SchemaConst.F_VERSION, self.VERSION)
-        self.type = schema.get(SchemaConst.F_TYPE, SchemaConst.T_STR)
-        self.source = schema.get(SchemaConst.F_SOURCE)
+        self.type = schema.get(SchemaConst.F_TYPE)
 
         items = schema.get(SchemaConst.F_ITEMS)
-        self.items = items and Schema(items)
+        self.items = Schema(items) if items else None
 
         properties = schema.get(SchemaConst.F_PROPERTIES)
-        self.properties = properties and {
+        self.properties_schemas = None if properties is None else {
             k: Schema(s) for k, s in properties.iteritems()
         }
 
         typeof_schemas = schema.get(SchemaConst.F_TYPEOF)
-        self.typeof_schemas = typeof_schemas and {
-            t: Schema(s) for t, s in typeof_schemas.iteritems()
+        self.typeof_schemas = None if typeof_schemas is None else {
+            types.NoneType if t is None else t: Schema(s)
+            for t, s in typeof_schemas.iteritems()
+            if isinstance(t, (type, tuple))
         }
+        self.typeof_default_schema = None if typeof_schemas is None \
+            else Schema(typeof_schemas.get(
+                SchemaConst.F_DEFAULT, SchemaConst.T_DEFAULT))
 
-        pattern_schemas = schema.get(SchemaConst.F_PATTERNPROPERTIES)
-        self.pattern_properties_schemas = pattern_schemas and {
-            re.compile(p): Schema(s) for p, s in pattern_schemas.iteritems()
+        p_schemas = schema.get(SchemaConst.F_PATTERNPROPERTIES)
+        self.pattern_properties_schemas = None if p_schemas is None else {
+            re.compile(p): Schema(s) for p, s in p_schemas.iteritems()
         }
 
     def check_version(self):
         """Check version if is available
         """
-        return self.version == self.VERSION
+        return self.version in ("0.2", "0.1")
 
-    def typeof_sub_schema(self, data):
+    def properties(self, name, istry=False):
+        """Get sub shcema by name
+        """
+        if name in self.properties_schemas:
+            return self.properties_schemas.get(name)
+        if not istry:
+            raise FieldMissError(
+                "field %s is miss in %s" % (name, SchemaConst.F_PROPERTIES))
+
+    def typeof(self, data, istry=False):
         """Get sub schema by data type
         """
-        for typ, sch in self.typeof_schemas.iteritems():
-            if isinstance(typ, (type, tuple)) and isinstance(data, typ):
-                return sch
-        return self.typeof_schemas.get(SchemaConst.F_DEFAULT)
+        if self.typeof_schemas is None:
+            if istry:
+                return None
+            raise FieldMissError("field %s is miss" % SchemaConst.F_TYPEOF)
 
-    def pattern_sub_schema(self, name):
+        for typ, sch in self.typeof_schemas.iteritems():
+            if isinstance(data, typ):
+                return sch
+        return self.typeof_default_schema
+
+    def pattern_properties(self, name, istry=False):
         """Get sub schema by name pattern
         """
+        if self.pattern_properties_schemas is None:
+            if istry:
+                return None
+            raise FieldMissError(
+                "field %s is miss" % SchemaConst.F_PATTERNPROPERTIES)
+
         for rex, sch in self.pattern_properties_schemas.iteritems():
             if rex.match(name):
                 return sch
         return None
-
-    def real_schema(self, name, data):
-        """Get real schema
-        """
-        if self.typeof_schemas:
-            sch = self.typeof_sub_schema(data)
-            if sch is not None:
-                return sch
-        if isinstance(name, basestring) and self.pattern_properties_schemas:
-            sch = self.pattern_sub_schema(name)
-            if sch is not None:
-                return sch
-        return self
 
 
 class SchemaConvertor(object):
@@ -144,11 +159,13 @@ class SchemaConvertor(object):
         """Dict convertor
         """
         result = {}
-        for key, sch in schema.properties.iteritems():
-            name = sch.source or key
-            real_data = data[name]
-            real_schema = sch.real_schema(name, real_data)
-            result[key] = self._convertor(real_data, real_schema)
+        for key in data:
+            real_data = data[key]
+            real_schema = schema.properties(key, istry=True)
+            if not real_schema:
+                real_schema = schema.pattern_properties(key, istry=True)
+            if real_schema:
+                result[key] = self._convertor(real_data, real_schema)
         return result
 
     def _object_convertor(self, data, schema):
@@ -161,7 +178,7 @@ class SchemaConvertor(object):
         """
         result = []
         for item in data:
-            real_schema = schema.items.real_schema(None, item)
+            real_schema = schema.items or schema.typeof(item)
             result.append(self._convertor(item, real_schema))
         return result
 
@@ -183,6 +200,14 @@ class SchemaConvertor(object):
         """
         return data
 
+    def _auto_type_convertor(self, data, schema):
+        """when schema.type is None
+        """
+        real_schema = schema.typeof(data, istry=True)
+        if real_schema:
+            return self._convertor(data, real_schema)
+        return self._null_convertor(data, schema)
+
     CONVERTORS = {
         SchemaConst.T_STR: _type_convertor(types.StringType),
         SchemaConst.T_INT: _type_convertor(types.IntType),
@@ -194,5 +219,5 @@ class SchemaConvertor(object):
         SchemaConst.T_LIST: _array_convertor,
         SchemaConst.T_NULL: _null_convertor,
         SchemaConst.T_RAW: _raw_convertor,
+        None: _auto_type_convertor,
     }
-    DEFAULT_TYPE = SchemaConst.T_STR
