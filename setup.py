@@ -23,7 +23,7 @@ setup(
     name='schemaconvertor',
     version=__version__,
     description='a tool to serialize objects by schema',
-    long_description=open('README.rst').read(),
+    long_description=open('README.rst', 'a+').read(),
     author='Liu Yicong',
     author_email='imyikong@gmail.com',
     packages=find_packages(),
