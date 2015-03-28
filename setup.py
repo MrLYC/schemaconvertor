@@ -4,6 +4,8 @@
 import os
 import sys
 
+from schemaconvertor import __version__
+
 try:
     from setuptools import setup
 except ImportError:
@@ -24,9 +26,9 @@ if sys.argv[-1] == 'publish':
 
 setup(
     name='schemaconvertor',
-    version='',
+    version=__version__,
     description='a project created by LYC',
-    long_description=open('README.rst').read(),
+    long_description=open('README.md').read(),
     author='Liu Yicong',
     author_email='saber000@vip.qq.com',
     packages=find_packages(),

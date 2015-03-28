@@ -4,6 +4,8 @@
 import types
 import re
 
+from schemaconvertor import __version__
+
 
 def _type_convertor(type_):
     """Type convertor builder
@@ -57,50 +59,61 @@ class SchemaConst(object):
     F_TYPEOF = "typeOf"
     F_PATTERNPROPERTIES = "patternProperties"
 
+    # field states
+    S_UNDEFINED = None
+    S_DISABLED = frozenset()
+
 
 class Schema(object):
-    VERSION = "0.2"
+    VERSION = __version__
+    VERVERIFYREX = re.compile(r"0\.[1-2].*")
 
     def __init__(self, schema):
         if isinstance(schema, basestring):
             schema = {"type": schema}
 
         self.version = schema.get(SchemaConst.F_VERSION, self.VERSION)
-        self.type = schema.get(SchemaConst.F_TYPE)
+        self.type = schema.get(SchemaConst.F_TYPE, SchemaConst.S_UNDEFINED)
 
         items = schema.get(SchemaConst.F_ITEMS)
-        self.items = Schema(items) if items else None
+        self.items = Schema(items) if items else SchemaConst.S_DISABLED
 
         properties = schema.get(SchemaConst.F_PROPERTIES)
-        self.properties_schemas = None if properties is None else {
-            k: Schema(s) for k, s in properties.iteritems()
-        }
+        self.properties_schemas = SchemaConst.S_DISABLED \
+            if properties is None else {
+                k: Schema(s) for k, s in properties.iteritems()
+            }
 
         typeof_schemas = schema.get(SchemaConst.F_TYPEOF)
-        self.typeof_schemas = None if typeof_schemas is None else {
-            types.NoneType if t is None else t: Schema(s)
-            for t, s in typeof_schemas.iteritems()
-            if isinstance(t, (type, tuple))
-        }
-        self.typeof_default_schema = None if typeof_schemas is None \
-            else Schema(typeof_schemas.get(
+        self.typeof_schemas = SchemaConst.S_DISABLED \
+            if typeof_schemas is None else {
+                types.NoneType if t is None else t: Schema(s)
+                for t, s in typeof_schemas.iteritems()
+                if isinstance(t, (type, tuple, types.NoneType))
+            }
+        self.typeof_default_schema = SchemaConst.S_DISABLED \
+            if typeof_schemas is None else Schema(typeof_schemas.get(
                 SchemaConst.F_DEFAULT, SchemaConst.T_DEFAULT))
 
         p_schemas = schema.get(SchemaConst.F_PATTERNPROPERTIES)
-        self.pattern_properties_schemas = None if p_schemas is None else {
-            re.compile(p): Schema(s) for p, s in p_schemas.iteritems()
-        }
+        self.pattern_properties_schemas = SchemaConst.S_DISABLED \
+            if p_schemas is None else {
+                re.compile(p): Schema(s) for p, s in p_schemas.iteritems()
+            }
 
     def check_version(self):
         """Check version if is available
         """
-        return self.version in ("0.2", "0.1")
+        return self.VERVERIFYREX.match(self.version) is not None
 
     def properties(self, name, istry=False):
         """Get sub shcema by name
         """
+        if self.properties_schemas is SchemaConst.S_DISABLED:
+            return SchemaConst.S_UNDEFINED
+
         if name in self.properties_schemas:
-            return self.properties_schemas.get(name)
+            return self.properties_schemas.get(name, SchemaConst.S_UNDEFINED)
         if not istry:
             raise FieldMissError(
                 "field %s is miss in %s" % (name, SchemaConst.F_PROPERTIES))
@@ -108,9 +121,9 @@ class Schema(object):
     def typeof(self, data, istry=False):
         """Get sub schema by data type
         """
-        if self.typeof_schemas is None:
+        if self.typeof_schemas is SchemaConst.S_DISABLED:
             if istry:
-                return None
+                return SchemaConst.S_UNDEFINED
             raise FieldMissError("field %s is miss" % SchemaConst.F_TYPEOF)
 
         for typ, sch in self.typeof_schemas.iteritems():
@@ -121,16 +134,16 @@ class Schema(object):
     def pattern_properties(self, name, istry=False):
         """Get sub schema by name pattern
         """
-        if self.pattern_properties_schemas is None:
+        if self.pattern_properties_schemas is SchemaConst.S_DISABLED:
             if istry:
-                return None
+                return SchemaConst.S_UNDEFINED
             raise FieldMissError(
                 "field %s is miss" % SchemaConst.F_PATTERNPROPERTIES)
 
         for rex, sch in self.pattern_properties_schemas.iteritems():
             if rex.match(name):
                 return sch
-        return None
+        return SchemaConst.S_UNDEFINED
 
 
 class SchemaConvertor(object):
@@ -159,13 +172,20 @@ class SchemaConvertor(object):
         """Dict convertor
         """
         result = {}
-        for key in data:
-            real_data = data[key]
-            real_schema = schema.properties(key, istry=True)
-            if not real_schema:
+        if schema.pattern_properties_schemas is not SchemaConst.S_DISABLED:
+            for key in data:
+                real_data = data[key]
                 real_schema = schema.pattern_properties(key, istry=True)
-            if real_schema:
-                result[key] = self._convertor(real_data, real_schema)
+                if real_schema:
+                    result[key] = self._convertor(real_data, real_schema)
+
+        if schema.properties_schemas is not SchemaConst.S_DISABLED:
+            for key in schema.properties_schemas:
+                real_data = data[key]
+                real_schema = schema.properties(key)
+                if real_schema:
+                    result[key] = self._convertor(real_data, real_schema)
+
         return result
 
     def _object_convertor(self, data, schema):
@@ -177,9 +197,10 @@ class SchemaConvertor(object):
         """iterable object convertor
         """
         result = []
-        for item in data:
-            real_schema = schema.items or schema.typeof(item)
-            result.append(self._convertor(item, real_schema))
+        real_schema = schema.items
+        if real_schema is not SchemaConst.S_DISABLED:
+            for item in data:
+                result.append(self._convertor(item, real_schema))
         return result
 
     def _number_convertor(self, data, schema):
@@ -204,7 +225,7 @@ class SchemaConvertor(object):
         """when schema.type is None
         """
         real_schema = schema.typeof(data, istry=True)
-        if real_schema:
+        if real_schema is not SchemaConst.S_UNDEFINED:
             return self._convertor(data, real_schema)
         return self._null_convertor(data, schema)
 
