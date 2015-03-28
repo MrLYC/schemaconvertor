@@ -35,3 +35,6 @@ test: pylint
 
 requires: $(ROOTPATH)/requirements.txt
 	$(PIPINSTALL) -r $(ROOTPATH)/requirements.txt
+
+pypi-upload:
+	$(PYTHON) setup.py clean bdist_egg sdist upload

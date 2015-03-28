@@ -4,7 +4,7 @@
 import types
 import re
 
-from schemaconvertor import __version__
+__version__ = '0.2.2'
 
 
 def _type_convertor(type_):
@@ -126,6 +126,10 @@ class Schema(object):
                 return SchemaConst.S_UNDEFINED
             raise FieldMissError("field %s is miss" % SchemaConst.F_TYPEOF)
 
+        sch = self.typeof_schemas.get(type(data), SchemaConst.S_UNDEFINED)
+        if sch is not SchemaConst.S_UNDEFINED:
+            return sch
+
         for typ, sch in self.typeof_schemas.iteritems():
             if isinstance(data, typ):
                 return sch
@@ -230,7 +234,7 @@ class SchemaConvertor(object):
         return self._null_convertor(data, schema)
 
     CONVERTORS = {
-        SchemaConst.T_STR: _type_convertor(types.StringType),
+        SchemaConst.T_STR: _type_convertor(types.UnicodeType),
         SchemaConst.T_INT: _type_convertor(types.IntType),
         SchemaConst.T_FLOAT: _type_convertor(types.FloatType),
         SchemaConst.T_BOOL: _type_convertor(types.BooleanType),
@@ -242,3 +246,10 @@ class SchemaConvertor(object):
         SchemaConst.T_RAW: _raw_convertor,
         None: _auto_type_convertor,
     }
+
+
+def to_dict_by_schema(data, schema):
+    """a quick tool to convert data by schema
+    """
+    cvtr = SchemaConvertor(schema)
+    return cvtr(data)
