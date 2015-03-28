@@ -72,6 +72,20 @@ class Schema(object):
         if isinstance(schema, basestring):
             schema = {"type": schema}
 
+        self.origin_schema = schema
+        self.built = False
+
+    def __getattr__(self, name):
+        self.compile()
+        return getattr(self, name)
+
+    def compile(self):
+        """compile schema
+        """
+        if self.built:
+            return
+
+        schema = self.origin_schema
         self.version = schema.get(SchemaConst.F_VERSION, self.VERSION)
         self.type = schema.get(SchemaConst.F_TYPE, SchemaConst.S_UNDEFINED)
 
@@ -100,6 +114,8 @@ class Schema(object):
             if p_schemas is None else {
                 re.compile(p): Schema(s) for p, s in p_schemas.iteritems()
             }
+
+        self.built = True
 
     def check_version(self):
         """Check version if is available
