@@ -4,7 +4,7 @@
 import types
 import re
 
-__version__ = '0.2.2'
+__version__ = '0.2.2.1'
 
 
 def _type_convertor(type_):
