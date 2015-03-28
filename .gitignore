@@ -57,6 +57,7 @@ target/
 *.bak
 *.tmp
 *.*~
+README.rst
 
 # virtualenv
 schemaconvertor-venv/

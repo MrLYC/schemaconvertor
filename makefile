@@ -37,4 +37,6 @@ requires: $(ROOTPATH)/requirements.txt
 	$(PIPINSTALL) -r $(ROOTPATH)/requirements.txt
 
 pypi-upload:
+	pandoc README.md -o README.rst
 	$(PYTHON) setup.py clean bdist_egg sdist upload
+	$(PYTHON) setup.py clean

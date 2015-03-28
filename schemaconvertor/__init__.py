@@ -4,5 +4,6 @@
 from . import convertor
 
 __author__ = 'Liu Yicong'
-__email__ = 'saber000@vip.qq.com'
+__email__ = 'imyikong@gmail.com'
 __version__ = convertor.__version__
+__all__ = ["__author__", "__email__", "__version__", "convertor"]
