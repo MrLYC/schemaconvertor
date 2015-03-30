@@ -22,7 +22,7 @@ FieldTypeError = type("FieldTypeError", (TypeError,), {})
 FieldMissError = type("FieldMissError", (KeyError,), {})
 
 
-class ObjectAsDict(object):
+class ObjAsDictAdapter(object):
     def __init__(self, obj):
         self.__object = obj
 
@@ -68,12 +68,16 @@ class Schema(object):
     VERSION = __version__
     VERVERIFYREX = re.compile(r"0\.[1-2].*")
 
-    def __init__(self, schema):
+    def __init__(self, schema, parent=None):
         if isinstance(schema, basestring):
             schema = {"type": schema}
 
         self.origin_schema = schema
-        self.built = False
+        self.parent = parent
+        self.version = schema.get(
+            SchemaConst.F_VERSION,
+            parent.version if parent else self.VERSION)
+        self.compiled = False
 
     def __getattr__(self, name):
         self.compile()
@@ -82,40 +86,39 @@ class Schema(object):
     def compile(self):
         """compile schema
         """
-        if self.built:
+        if self.compiled:
             return
 
         schema = self.origin_schema
-        self.version = schema.get(SchemaConst.F_VERSION, self.VERSION)
         self.type = schema.get(SchemaConst.F_TYPE, SchemaConst.S_UNDEFINED)
 
         items = schema.get(SchemaConst.F_ITEMS)
-        self.items = Schema(items) if items else SchemaConst.S_DISABLED
+        self.items = self.subschema(items) if items else SchemaConst.S_DISABLED
 
         properties = schema.get(SchemaConst.F_PROPERTIES)
         self.properties_schemas = SchemaConst.S_DISABLED \
             if properties is None else {
-                k: Schema(s) for k, s in properties.iteritems()
+                k: self.subschema(s) for k, s in properties.iteritems()
             }
 
         typeof_schemas = schema.get(SchemaConst.F_TYPEOF)
         self.typeof_schemas = SchemaConst.S_DISABLED \
             if typeof_schemas is None else {
-                types.NoneType if t is None else t: Schema(s)
+                types.NoneType if t is None else t: self.subschema(s)
                 for t, s in typeof_schemas.iteritems()
                 if isinstance(t, (type, tuple, types.NoneType))
             }
         self.typeof_default_schema = SchemaConst.S_DISABLED \
-            if typeof_schemas is None else Schema(typeof_schemas.get(
+            if typeof_schemas is None else self.subschema(typeof_schemas.get(
                 SchemaConst.F_DEFAULT, SchemaConst.T_DEFAULT))
 
         p_schemas = schema.get(SchemaConst.F_PATTERNPROPERTIES)
         self.pattern_properties_schemas = SchemaConst.S_DISABLED \
             if p_schemas is None else {
-                re.compile(p): Schema(s) for p, s in p_schemas.iteritems()
+                re.compile(p): self.subschema(s) for p, s in p_schemas.items()
             }
 
-        self.built = True
+        self.compiled = True
 
     def check_version(self):
         """Check version if is available
@@ -165,9 +168,14 @@ class Schema(object):
                 return sch
         return SchemaConst.S_UNDEFINED
 
+    def subschema(self, sch):
+        """create a subschema
+        """
+        return Schema(sch, self)
+
 
 class SchemaConvertor(object):
-    def __init__(self, schema):
+    def __init__(self, schema, parent=None):
         if not isinstance(schema, Schema):
             schema = Schema(schema)
 
@@ -175,6 +183,7 @@ class SchemaConvertor(object):
             raise SchemaVersionError()
 
         self.schema = schema
+        self.parent = parent
 
     def __call__(self, data):
         return self._convertor(data, self.schema)
@@ -211,7 +220,7 @@ class SchemaConvertor(object):
     def _object_convertor(self, data, schema):
         """Object convertor
         """
-        return self._dict_convertor(ObjectAsDict(data), schema)
+        return self._dict_convertor(ObjAsDictAdapter(data), schema)
 
     def _array_convertor(self, data, schema):
         """iterable object convertor
