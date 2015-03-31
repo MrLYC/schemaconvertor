@@ -212,6 +212,7 @@ class TestSchemaConvertor(TestCase):
 
     def test_string_decoderr(self):
         convertor = SchemaConvertor({
+            "encoding": "utf-8",
             "type": "string"
         })
 
@@ -219,6 +220,7 @@ class TestSchemaConvertor(TestCase):
             self.assertEqual(convertor(u"刘奕聪".encode("gbk")), u"刘奕聪")
 
         convertor = SchemaConvertor({
+            "encoding": "utf-8",
             "decoderrors": "ignore",
             "type": "string"
         })
@@ -226,6 +228,7 @@ class TestSchemaConvertor(TestCase):
         self.assertNotEqual(convertor(u"刘奕聪".encode("gbk")), u"刘奕聪")
 
         convertor = SchemaConvertor({
+            "encoding": "utf-8",
             "decoderrors": "replace",
             "type": "string"
         })
