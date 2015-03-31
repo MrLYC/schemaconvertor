@@ -281,6 +281,9 @@ class SchemaConvertor(object):
     def _str_convertor(self, data, schema):
         """auto unicode string convertor
         """
+        if schema.encoding is None:
+            return data
+
         if isinstance(data, unicode):
             return data
 

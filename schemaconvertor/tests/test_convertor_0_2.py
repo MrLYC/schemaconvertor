@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-import sys
 from unittest import TestCase
+from collections import namedtuple
 
 from schemaconvertor.convertor import (
     Schema, SchemaConst, ObjAsDictAdapter, SchemaConvertor)
+
+Pair = namedtuple("Pair", ["key", "value"])
 
 
 class TestObjAsDictAdapter(TestCase):
@@ -221,6 +223,15 @@ class TestSchemaConvertor(TestCase):
         self.assertEqual(convertor(u"刘奕聪".encode("utf-8")), u"刘奕聪")
 
         convertor = SchemaConvertor({
+            "encoding": None,
+            "type": "string"
+        })
+        self.assertEqual(convertor(u"刘奕聪"), u"刘奕聪")
+        self.assertEqual(convertor(
+            u"刘奕聪".encode("utf-8")), u"刘奕聪".encode("utf-8"))
+        self.assertEqual(convertor(None), None)
+
+        convertor = SchemaConvertor({
             "encoding": "gbk",
             "type": "string"
         })
@@ -251,3 +262,165 @@ class TestSchemaConvertor(TestCase):
         })
         self.assertIsInstance(convertor(u"刘奕聪".encode("gbk")), unicode)
         self.assertNotEqual(convertor(u"刘奕聪".encode("gbk")), u"刘奕聪")
+
+    def test_integer(self):
+        convertor = SchemaConvertor({
+            "type": "integer"
+        })
+
+        self.assertIs(convertor(1), 1)
+        self.assertIs(convertor("2"), 2)
+        self.assertIs(convertor(3.4), 3)
+
+    def test_float(self):
+        convertor = SchemaConvertor({
+            "type": "float"
+        })
+
+        self.assertEqual(convertor("1.2"), 1.2)
+        self.assertEqual(convertor(3.4), 3.4)
+
+    def test_bool(self):
+        convertor = SchemaConvertor({
+            "type": "boolean"
+        })
+        self.assertTrue(convertor(not 0))
+        self.assertTrue(convertor("1"))
+        self.assertTrue(convertor(2.3))
+        self.assertTrue(convertor([4]))
+        self.assertTrue(convertor({5: 6}))
+        self.assertTrue(convertor(object()))
+        self.assertTrue(convertor(True))
+        self.assertFalse(convertor(0))
+        self.assertFalse(convertor(""))
+        self.assertFalse(convertor(0.0))
+        self.assertFalse(convertor([]))
+        self.assertFalse(convertor({}))
+        self.assertFalse(convertor(None))
+        self.assertFalse(convertor(False))
+
+    def test_number(self):
+        convertor = SchemaConvertor({
+            "type": "number"
+        })
+        self.assertEqual(convertor(1), 1)
+        self.assertEqual(convertor("2.3"), 2.3)
+        self.assertEqual(convertor(3.4), 3.4)
+        self.assertEqual(convertor("5"), 5)
+
+    def test_dict(self):
+        convertor = SchemaConvertor({
+            "type": "dict",
+            "properties": {
+                "key": "string",
+                "value": "string"
+            }
+        })
+
+        data = {
+            "key": "test",
+            "value": 1
+        }
+        self.assertDictEqual(convertor(data), {
+            "key": "test",
+            "value": "1"
+        })
+
+        convertor = SchemaConvertor({
+            "type": "dict",
+            "patternProperties": {
+                "[a-z]": "string",
+                "[0-9]": "number"
+            }
+        })
+
+        data = {
+            "a": 0,
+            "1": "2",
+            "b": "3.4",
+            "5": 5.6,
+        }
+        self.assertDictEqual(convertor(data), {
+            "a": "0",
+            "1": 2,
+            "b": "3.4",
+            "5": 5.6,
+        })
+
+    def test_object(self):
+        convertor = SchemaConvertor({
+            "type": "object",
+            "properties": {
+                "key": "string",
+                "value": "string"
+            }
+        })
+
+        data = Pair("test", 1)
+        self.assertDictEqual(convertor(data), {
+            "key": "test",
+            "value": "1"
+        })
+
+        convertor = SchemaConvertor({
+            "type": "object",
+            "patternProperties": {
+                r"k\w+": "string",
+                r"v\w+": "number"
+            }
+        })
+        data = Pair("test", 1)
+        self.assertDictEqual(convertor(data), {
+            "key": "test",
+            "value": 1
+        })
+
+    def test_array(self):
+        convertor = SchemaConvertor({
+            "type": "array",
+            "items": "string"
+        })
+        data = range(3)
+        self.assertListEqual(convertor(data), ["0", "1", "2"])
+
+    def test_null(self):
+        convertor = SchemaConvertor({
+            "type": "null",
+        })
+        self.assertIsNone(convertor(None))
+        self.assertIsNone(convertor(0))
+        self.assertIsNone(convertor(1.2))
+        self.assertIsNone(convertor("3.4"))
+
+    def test_raw(self):
+        convertor = SchemaConvertor({
+            "type": "raw",
+        })
+        data = [None, 0, 1.2, "3"]
+        self.assertListEqual(convertor(data), data)
+
+    def test_typeof(self):
+        convertor = SchemaConvertor({
+            "typeOf": {
+                int: "boolean",
+                None: "string",
+                (float, str): "integer",
+                Pair: {
+                    "type": "object",
+                    "properties": {
+                        "key": "string",
+                        "value": "string"
+                    }
+                },
+                "default": "string"
+            }
+        })
+        self.assertEqual(convertor(1), True)
+        self.assertEqual(convertor(2.3), 2)
+        self.assertEqual(convertor("4"), 4)
+        self.assertEqual(convertor(None), "None")
+        self.assertEqual(convertor(Pair("test", 1)), {
+            "key": "test", "value": "1"
+        })
+        self.assertEqual(convertor(True), True)  # bool is subclass of int
+        self.assertEqual(convertor([]), "[]")
