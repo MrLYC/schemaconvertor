@@ -3,7 +3,7 @@
 
 import types
 import re
-import sys
+import collections
 
 __version__ = '0.2.2.4'
 
@@ -23,18 +23,24 @@ FieldTypeError = type("FieldTypeError", (TypeError,), {})
 FieldMissError = type("FieldMissError", (KeyError,), {})
 
 
-class ObjAsDictAdapter(object):
+class ObjAsDictAdapter(collections.Mapping):
     def __init__(self, obj):
         self.__object = obj
 
     def __getitem__(self, name):
-        return getattr(self.__object, name)
+        try:
+            return getattr(self.__object, name)
+        except AttributeError:
+            raise KeyError(name)
 
     def __setitem__(self, name, value):
         setattr(self.__object, name, value)
 
     def __iter__(self):
         return iter(dir(self.__object))
+
+    def __len__(self):
+        return len(dir(self.__object))
 
 
 class SchemaConst(object):
