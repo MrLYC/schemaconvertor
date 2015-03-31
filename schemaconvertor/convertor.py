@@ -3,6 +3,7 @@
 
 import types
 import re
+import sys
 
 __version__ = '0.2.2.4'
 
@@ -58,10 +59,16 @@ class SchemaConst(object):
     F_ITEMS = "items"
     F_TYPEOF = "typeOf"
     F_PATTERNPROPERTIES = "patternProperties"
+    F_ENCODING = "encoding"
+    F_DECODERR = "decoderrors"
 
     # field states
     S_UNDEFINED = None
     S_DISABLED = frozenset()
+
+    # const values
+    V_ENCODING = "utf-8"
+    V_DECODERR = "strict"
 
 
 class Schema(object):
@@ -115,8 +122,16 @@ class Schema(object):
         p_schemas = schema.get(SchemaConst.F_PATTERNPROPERTIES)
         self.pattern_properties_schemas = SchemaConst.S_DISABLED \
             if p_schemas is None else {
-                re.compile(p): self.subschema(s) for p, s in p_schemas.items()
+                re.compile(p): self.subschema(s)
+                for p, s in p_schemas.iteritems()
             }
+
+        self.encoding = schema.get(
+            SchemaConst.F_ENCODING,
+            self.parent.encoding if self.parent else SchemaConst.V_ENCODING)
+        self.decoderrors = schema.get(
+            SchemaConst.F_DECODERR,
+            self.parent.decoderrors if self.parent else SchemaConst.V_DECODERR)
 
         self.compiled = True
 
@@ -175,7 +190,7 @@ class Schema(object):
 
 
 class SchemaConvertor(object):
-    def __init__(self, schema, parent=None):
+    def __init__(self, schema):
         if not isinstance(schema, Schema):
             schema = Schema(schema)
 
@@ -183,7 +198,6 @@ class SchemaConvertor(object):
             raise SchemaVersionError()
 
         self.schema = schema
-        self.parent = parent
 
     def __call__(self, data):
         return self._convertor(data, self.schema)
@@ -258,8 +272,17 @@ class SchemaConvertor(object):
             return self._convertor(data, real_schema)
         return self._null_convertor(data, schema)
 
+    def _str_convertor(self, data, schema):
+        """auto unicode string convertor
+        """
+        if isinstance(data, unicode):
+            return data
+
+        data = str(data)
+        return data.decode(schema.encoding, schema.decoderrors)
+
     CONVERTORS = {
-        SchemaConst.T_STR: _type_convertor(types.UnicodeType),
+        SchemaConst.T_STR: _str_convertor,
         SchemaConst.T_INT: _type_convertor(types.IntType),
         SchemaConst.T_FLOAT: _type_convertor(types.FloatType),
         SchemaConst.T_BOOL: _type_convertor(types.BooleanType),

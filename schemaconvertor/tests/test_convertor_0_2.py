@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+import sys
 from unittest import TestCase
 
 from schemaconvertor.convertor import (
-    Schema, SchemaConst, ObjAsDictAdapter)
+    Schema, SchemaConst, ObjAsDictAdapter, SchemaConvertor)
 
 
 class TestObjAsDictAdapter(TestCase):
@@ -73,6 +74,8 @@ class TestSchema(TestCase):
         self.assertEqual(schema.typeof_schemas, SchemaConst.S_DISABLED)
         self.assertEqual(schema.typeof_default_schema, SchemaConst.S_DISABLED)
         self.assertEqual(schema.compiled, True)
+        self.assertEqual(schema.encoding, SchemaConst.V_ENCODING)
+        self.assertEqual(schema.decoderrors, SchemaConst.V_DECODERR)
 
     def test_version(self):
         schema = Schema({
@@ -140,3 +143,91 @@ class TestSchema(TestCase):
 
         schema = Schema("string")
         self.assertEqual(schema.type, "string")
+
+    def test_encoding(self):
+        schema = Schema({
+            "version": "0.2",
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        })
+        self.assertEqual(schema.encoding, "utf-8")
+        self.assertEqual(schema.items.encoding, "utf-8")
+        self.assertEqual(schema.decoderrors, "strict")
+        self.assertEqual(schema.items.decoderrors, "strict")
+
+        schema = Schema({
+            "version": "0.2",
+            "encoding": "gbk",
+            "decoderrors": "ignore",
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        })
+        self.assertEqual(schema.encoding, "gbk")
+        self.assertEqual(schema.items.encoding, "gbk")
+        self.assertEqual(schema.decoderrors, "ignore")
+        self.assertEqual(schema.items.decoderrors, "ignore")
+
+        schema = Schema({
+            "version": "0.2",
+            "encoding": "gbk",
+            "decoderrors": "ignore",
+            "type": "array",
+            "items": {
+                "type": "string",
+                "encoding": "utf-8",
+                "decoderrors": "replace",
+            }
+        })
+        self.assertEqual(schema.encoding, "gbk")
+        self.assertEqual(schema.items.encoding, "utf-8")
+        self.assertEqual(schema.decoderrors, "ignore")
+        self.assertEqual(schema.items.decoderrors, "replace")
+
+
+class TestSchemaConvertor(TestCase):
+    def test_string_encoding(self):
+        convertor = SchemaConvertor({
+            "type": "string"
+        })
+        self.assertEqual(convertor(u"刘奕聪"), u"刘奕聪")
+        self.assertEqual(convertor(u"刘奕聪".encode("utf-8")), u"刘奕聪")
+
+        convertor = SchemaConvertor({
+            "encoding": "utf-8",
+            "type": "string"
+        })
+        self.assertEqual(convertor(u"刘奕聪"), u"刘奕聪")
+        self.assertEqual(convertor(u"刘奕聪".encode("utf-8")), u"刘奕聪")
+
+        convertor = SchemaConvertor({
+            "encoding": "gbk",
+            "type": "string"
+        })
+        self.assertEqual(convertor(u"刘奕聪"), u"刘奕聪")
+        self.assertEqual(convertor(u"刘奕聪".encode("gbk")), u"刘奕聪")
+
+    def test_string_decoderr(self):
+        convertor = SchemaConvertor({
+            "type": "string"
+        })
+
+        with self.assertRaises(UnicodeDecodeError):
+            self.assertEqual(convertor(u"刘奕聪".encode("gbk")), u"刘奕聪")
+
+        convertor = SchemaConvertor({
+            "decoderrors": "ignore",
+            "type": "string"
+        })
+        self.assertIsInstance(convertor(u"刘奕聪".encode("gbk")), unicode)
+        self.assertNotEqual(convertor(u"刘奕聪".encode("gbk")), u"刘奕聪")
+
+        convertor = SchemaConvertor({
+            "decoderrors": "replace",
+            "type": "string"
+        })
+        self.assertIsInstance(convertor(u"刘奕聪".encode("gbk")), unicode)
+        self.assertNotEqual(convertor(u"刘奕聪".encode("gbk")), u"刘奕聪")
