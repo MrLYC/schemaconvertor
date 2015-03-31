@@ -3,6 +3,7 @@
 
 import types
 import re
+import collections
 
 __version__ = '0.2.2.4'
 
@@ -22,18 +23,24 @@ FieldTypeError = type("FieldTypeError", (TypeError,), {})
 FieldMissError = type("FieldMissError", (KeyError,), {})
 
 
-class ObjectAsDict(object):
+class ObjAsDictAdapter(collections.Mapping):
     def __init__(self, obj):
         self.__object = obj
 
     def __getitem__(self, name):
-        return getattr(self.__object, name)
+        try:
+            return getattr(self.__object, name)
+        except AttributeError:
+            raise KeyError(name)
 
     def __setitem__(self, name, value):
         setattr(self.__object, name, value)
 
     def __iter__(self):
         return iter(dir(self.__object))
+
+    def __len__(self):
+        return len(dir(self.__object))
 
 
 class SchemaConst(object):
@@ -58,22 +65,32 @@ class SchemaConst(object):
     F_ITEMS = "items"
     F_TYPEOF = "typeOf"
     F_PATTERNPROPERTIES = "patternProperties"
+    F_ENCODING = "encoding"
+    F_DECODERR = "decoderrors"
 
     # field states
     S_UNDEFINED = None
     S_DISABLED = frozenset()
+
+    # const values
+    V_ENCODING = "utf-8"
+    V_DECODERR = "strict"
 
 
 class Schema(object):
     VERSION = __version__
     VERVERIFYREX = re.compile(r"0\.[1-2].*")
 
-    def __init__(self, schema):
+    def __init__(self, schema, parent=None):
         if isinstance(schema, basestring):
             schema = {"type": schema}
 
         self.origin_schema = schema
-        self.built = False
+        self.parent = parent
+        self.version = schema.get(
+            SchemaConst.F_VERSION,
+            parent.version if parent else self.VERSION)
+        self.compiled = False
 
     def __getattr__(self, name):
         self.compile()
@@ -82,40 +99,47 @@ class Schema(object):
     def compile(self):
         """compile schema
         """
-        if self.built:
+        if self.compiled:
             return
 
         schema = self.origin_schema
-        self.version = schema.get(SchemaConst.F_VERSION, self.VERSION)
         self.type = schema.get(SchemaConst.F_TYPE, SchemaConst.S_UNDEFINED)
 
         items = schema.get(SchemaConst.F_ITEMS)
-        self.items = Schema(items) if items else SchemaConst.S_DISABLED
+        self.items = self.subschema(items) if items else SchemaConst.S_DISABLED
 
         properties = schema.get(SchemaConst.F_PROPERTIES)
         self.properties_schemas = SchemaConst.S_DISABLED \
             if properties is None else {
-                k: Schema(s) for k, s in properties.iteritems()
+                k: self.subschema(s) for k, s in properties.iteritems()
             }
 
         typeof_schemas = schema.get(SchemaConst.F_TYPEOF)
         self.typeof_schemas = SchemaConst.S_DISABLED \
             if typeof_schemas is None else {
-                types.NoneType if t is None else t: Schema(s)
+                types.NoneType if t is None else t: self.subschema(s)
                 for t, s in typeof_schemas.iteritems()
                 if isinstance(t, (type, tuple, types.NoneType))
             }
         self.typeof_default_schema = SchemaConst.S_DISABLED \
-            if typeof_schemas is None else Schema(typeof_schemas.get(
+            if typeof_schemas is None else self.subschema(typeof_schemas.get(
                 SchemaConst.F_DEFAULT, SchemaConst.T_DEFAULT))
 
         p_schemas = schema.get(SchemaConst.F_PATTERNPROPERTIES)
         self.pattern_properties_schemas = SchemaConst.S_DISABLED \
             if p_schemas is None else {
-                re.compile(p): Schema(s) for p, s in p_schemas.iteritems()
+                re.compile(p): self.subschema(s)
+                for p, s in p_schemas.iteritems()
             }
 
-        self.built = True
+        self.encoding = schema.get(
+            SchemaConst.F_ENCODING,
+            self.parent.encoding if self.parent else SchemaConst.V_ENCODING)
+        self.decoderrors = schema.get(
+            SchemaConst.F_DECODERR,
+            self.parent.decoderrors if self.parent else SchemaConst.V_DECODERR)
+
+        self.compiled = True
 
     def check_version(self):
         """Check version if is available
@@ -165,6 +189,11 @@ class Schema(object):
                 return sch
         return SchemaConst.S_UNDEFINED
 
+    def subschema(self, sch):
+        """create a subschema
+        """
+        return Schema(sch, self)
+
 
 class SchemaConvertor(object):
     def __init__(self, schema):
@@ -211,7 +240,7 @@ class SchemaConvertor(object):
     def _object_convertor(self, data, schema):
         """Object convertor
         """
-        return self._dict_convertor(ObjectAsDict(data), schema)
+        return self._dict_convertor(ObjAsDictAdapter(data), schema)
 
     def _array_convertor(self, data, schema):
         """iterable object convertor
@@ -249,8 +278,17 @@ class SchemaConvertor(object):
             return self._convertor(data, real_schema)
         return self._null_convertor(data, schema)
 
+    def _str_convertor(self, data, schema):
+        """auto unicode string convertor
+        """
+        if isinstance(data, unicode):
+            return data
+
+        data = str(data)
+        return data.decode(schema.encoding, schema.decoderrors)
+
     CONVERTORS = {
-        SchemaConst.T_STR: _type_convertor(types.UnicodeType),
+        SchemaConst.T_STR: _str_convertor,
         SchemaConst.T_INT: _type_convertor(types.IntType),
         SchemaConst.T_FLOAT: _type_convertor(types.FloatType),
         SchemaConst.T_BOOL: _type_convertor(types.BooleanType),
