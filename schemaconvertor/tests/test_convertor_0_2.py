@@ -365,8 +365,8 @@ class TestSchemaConvertor(TestCase):
         convertor = SchemaConvertor({
             "type": "object",
             "patternProperties": {
-                r"k\w+": "string",
-                r"v\w+": "number"
+                r"^k\w+$": "string",
+                r"^v\w+$": "number"
             }
         })
         data = Pair("test", 1)

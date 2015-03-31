@@ -185,7 +185,7 @@ class Schema(object):
                 "field %s is miss" % SchemaConst.F_PATTERNPROPERTIES)
 
         for rex, sch in self.pattern_properties_schemas.iteritems():
-            if rex.match(name):
+            if rex.search(name):
                 return sch
         return SchemaConst.S_UNDEFINED
 
@@ -305,7 +305,7 @@ class SchemaConvertor(object):
     }
 
 
-def to_dict_by_schema(data, schema):
+def convert_by_schema(data, schema):
     """a quick tool to convert data by schema
     """
     cvtr = SchemaConvertor(schema)
