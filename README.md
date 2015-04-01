@@ -1,7 +1,10 @@
 # schemaconvertor
 **schemaconvertor**提供了一种使用schema来转换对象的方法，通过schema，可以指定该对象序列化的部分和对应的类型，其结果可以进一步序列化为json。
+
 安装：`pip install schemaconvertor`
+
 项目：[github](https://github.com/MrLYC/schemaconvertor) [pypi](https://pypi.python.org/pypi/schemaconvertor/)
+
 版本：0.3
 
 ## 演示
