@@ -5,7 +5,7 @@ import types
 import re
 import collections
 
-__version__ = '0.2.2.5'
+__version__ = '0.3'
 
 
 def _type_convertor(type_):
@@ -67,6 +67,7 @@ class SchemaConst(object):
     F_PATTERNPROPERTIES = "patternProperties"
     F_ENCODING = "encoding"
     F_DECODERR = "decoderrors"
+    F_DESCRIPTION = "description"
 
     # field states
     S_UNDEFINED = None
@@ -79,7 +80,7 @@ class SchemaConst(object):
 
 class Schema(object):
     VERSION = __version__
-    VERVERIFYREX = re.compile(r"0\.[1-2].*")
+    VERVERIFYREX = re.compile(r"0\.[1-3].*")
 
     def __init__(self, schema, parent=None):
         if isinstance(schema, basestring):
@@ -90,11 +91,20 @@ class Schema(object):
         self.version = schema.get(
             SchemaConst.F_VERSION,
             parent.version if parent else self.VERSION)
+        self.description = str(schema.get(
+            SchemaConst.F_DESCRIPTION,
+            parent.description if parent else self.__class__))
         self.compiled = False
 
     def __getattr__(self, name):
         self.compile()
         return getattr(self, name)
+
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__.__name__, self.origin_schema)
+
+    def __str__(self):
+        return "<Schema: %s>" % self.description
 
     def compile(self):
         """compile schema
@@ -216,6 +226,12 @@ class SchemaConvertor(object):
             raise TypeError("Unknown type: %s" % schema.type)
 
         return convertor(self, data, schema)
+
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, repr(self.schema))
+
+    def __str__(self):
+        return "<SchemaConvertor: %s>" % self.schema
 
     def _dict_convertor(self, data, schema):
         """Dict convertor

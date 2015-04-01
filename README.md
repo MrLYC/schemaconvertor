@@ -1,7 +1,10 @@
 # schemaconvertor
-schemaconvertor提供了一种使用schema来转换对象的方法，通过schema，可以指定该对象序列化的部分和对应的类型，其结果可以进一步序列化为json。
+**schemaconvertor**提供了一种使用schema来转换对象的方法，通过schema，可以指定该对象序列化的部分和对应的类型，其结果可以进一步序列化为json。
+安装：`pip install schemaconvertor`
+项目：[github](https://github.com/MrLYC/schemaconvertor) [pypi](https://pypi.python.org/pypi/schemaconvertor/)
+版本：0.3
 
-# Features
+## 演示
 假设有个简单的数据类型`User`：
 ```py
 from collections import namedtuple
@@ -25,79 +28,66 @@ schema = {
 
 user = User(name="lyc", password="schemaconvertor", age="24")
 
-from schemaconvertor.convertor import to_dict_by_schema
+from schemaconvertor.convertor import convert_by_schema
 
-print to_dict_by_schema(user, schema)
+print convert_by_schema(user, schema)
 ```
 
 输出：
 > {'age': 24, 'name': 'lyc'}
 
+更多示例：[demo 0.3](https://github.com/MrLYC/schemaconvertor/blob/master/schemaconvertor/tests/test_demo.py)
 
-当仅有**type**一项时，可以将schema省略表示为：
-```py
-schema = {
-    "type": "object",
-    "properties": {
-        "name": "string",
-        "age": "integer"
-    }
-}
-```
+## 说明
+### 基本字段
+#### version
+**version**字段标识着Schema版本。
 
-## 基本数据类型
-| schema | python | comments |
-|--------|--------|--------|
-| string | types.StringType |        |
-| integer | types.IntType |        |
-| float | types.FloatType |        |
-| boolean | types.BooleanType |        |
-| number | int or float | int or float automatic |
-| dict | dict like object |        |
-| object | object |        |
-| array | list | same type of each elements |
-| null | None |        |
-| raw | raw object | return object directly |
+#### description
+**description**字段标识着Schema说明。
 
-## 基本字段
-### type
-指定生成的dict的对应字段的类型。
+#### encoding
+**encoding**指定Schema的**string**字段的字符编码，默认是*utf-8*。
 
-### properties
-仅在指定**type**为`dict`或`object`时生效，当为`dict`是对应着字典的每一项，为`object`时则对应着每一个属性。
+#### decoderrors
+**decoderrors**指定Schema的**string**字段解码失败的操作，用于`str.decode`的第二个参数，主要有*strict*，*ignore*，*replace*三种可选参数，默认是`strict`。
 
-### items
-仅在指定**type**为`array`时生效，描述着数组每一项的schema。
+#### type
+**type**字段指定对应待转换数据的最终类型，主要类型对应如下表：
 
-### typeOf
-该项指示如何根据数据元素类型来处理数据：
-```py
-schema = {
-    "type": "array",
-    "items": {
-        "typeOf": {
-            User: {
-                "name": "string",
-                "age": "integer"
-            },
-            (int, float): "float",
-            "default": "string"
-        }
-    }
-}
+|     type     |     Python     |
+|:------------:|:--------------:|
+|    string    |     unicode    |
+|    object    |      dict      |
+|    integer   |      int       |
+|    float     |      float     |
+|    number    |    int/float   |
+|    boolean   |      bool      |
+|    dict      |      dict      |
+|    array     |      list      |
+|    null      |    NoneType    |
+|    raw       |     object     |
 
-schema = {
-    "type": "object",
-    "properties": {
-        "key": "string",
-        "value": {
-            "typeOf": {
-                int: "float",
-                str: "integer",
-                float: "string"
-            }
-        }
-    }
-}
-```
-其中，**default**用来指示没有被列出的类型对应的数据的处理方式。
+**type**字段直接影响转换行为，因此基本上每个Schema都需指定**type**，为简化表达，当一个Schema仅有**type**一项时，可以直接使用**type**的值简化表示为Schema。
+
+#### typeOf
+当前仅在声明**typeOf**字段时可以不指定**type**，**typeOf**指示如何根据数据的类型选择对应的Schema。可以使用真实的Python类型或类型元组作为key（作为`isinstance`的第二个参数）。
+
+#### default
+**default**字段仅用在**typeOf**字段内，用于指示缺省类型表示的Schema。
+
+#### items
+**items**字段仅在**type**为array时生效，用于描述序列中的每一项对应的Schema。
+
+#### properties
+**items**字段仅在**type**为dict或object时生效，指定给出的项的Schema（没有指定的项不会处理）。
+
+#### patternProperties
+**items**字段仅在**type**为dict或object时生效，指定符合给定的正则表达式的项的Schema（使用`re.search`匹配）。
+
+### 附加信息
+1. Schema使用lazy compile方式，仅在转换使用时自动编译，初始化代价极小。
+2. 子Schema中如无显式声明，*version*，*description*，*encoding*，*decoderrors*自动继承父Schema对应的值。
+3. **typeOf**能够识别继承关系，但针对使用数据真实类型的情况有优化。
+4. **typeOf**指定多种类型时不要使用`list`等非hashable类型。
+5. 对于*object*的情况是使用`ObjAsDictAdapter`将数据包装成类`dict`对象进行转换的。

@@ -87,6 +87,7 @@ class TestSchema(TestCase):
         self.assertEqual(schema.parent, None)
         self.assertEqual(schema.compiled, False)  # lazy
         self.assertEqual(schema.type, SchemaConst.S_UNDEFINED)
+        self.assertEqual(schema.description, str(schema.__class__))
         self.assertEqual(schema.items, SchemaConst.S_DISABLED)
         self.assertEqual(schema.properties_schemas, SchemaConst.S_DISABLED)
         self.assertEqual(schema.pattern_properties_schemas, SchemaConst.S_DISABLED)

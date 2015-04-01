@@ -33,7 +33,7 @@ class Book(object):
         self.tags = {}
 
 SIMPLEUSERSCHEMA = {
-    "version": "0.2",
+    "version": "0.3",
     "encoding": "utf-8",
     "type": "object",
     "properties": {
@@ -42,7 +42,7 @@ SIMPLEUSERSCHEMA = {
 }
 
 FULLUSERSCHEMA = {
-    "version": "0.2",
+    "version": "0.3",
     "encoding": "utf-8",
     "type": "object",
     "properties": {
@@ -53,7 +53,7 @@ FULLUSERSCHEMA = {
 }
 
 SIMPLEADMINSCHEMA = {
-    "version": "0.2",
+    "version": "0.3",
     "encoding": "utf-8",
     "type": "object",
     "properties": {
@@ -63,7 +63,7 @@ SIMPLEADMINSCHEMA = {
 }
 
 FULLADMINSCHEMA = {
-    "version": "0.2",
+    "version": "0.3",
     "encoding": "utf-8",
     "type": "object",
     "properties": {
@@ -75,7 +75,7 @@ FULLADMINSCHEMA = {
 }
 
 USERMIXTYPELISTSCHEMA = {
-    "version": "0.2",
+    "version": "0.3",
     "encoding": "utf-8",
     "type": "array",
     "items": {
@@ -87,14 +87,14 @@ USERMIXTYPELISTSCHEMA = {
 }
 
 USERLISTSCHEMA = {
-    "version": "0.2",
+    "version": "0.3",
     "encoding": "utf-8",
     "type": "array",
     "items": SIMPLEUSERSCHEMA
 }
 
 SIMPLEBOOKSCHEMA = {
-    "version": "0.2",
+    "version": "0.3",
     "encoding": "utf-8",
     "type": "object",
     "properties": {
@@ -107,7 +107,7 @@ SIMPLEBOOKSCHEMA = {
 }
 
 FULLBOOKSCHEMA = {
-    "version": "0.2",
+    "version": "0.3",
     "encoding": "utf-8",
     "type": "object",
     "properties": {
