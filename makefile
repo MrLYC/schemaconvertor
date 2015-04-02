@@ -40,5 +40,6 @@ pypi-upload:
 	 git branch | grep "* master" || exit 1
 	pandoc README.md -o README.rst
 	$(PYTHON) setup.py clean bdist_egg sdist upload || exit 2
-	git tag `$(PYTHON) setup.py --version`
 	$(PYTHON) setup.py clean
+	git tag `$(PYTHON) setup.py --version`
+	git rebase master dev
