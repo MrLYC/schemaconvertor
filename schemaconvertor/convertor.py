@@ -5,7 +5,7 @@ import types
 import re
 import collections
 
-__version__ = '0.3.0.2'
+__version__ = '0.3.1.0'
 
 
 def _type_convertor(type_):
@@ -98,7 +98,7 @@ class Schema(object):
 
     def __getattr__(self, name):
         self.compile()
-        return getattr(self, name)
+        return super(Schema, self).__getattribute__(name)
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.origin_schema)
