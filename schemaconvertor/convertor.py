@@ -5,6 +5,8 @@ import types
 import re
 import collections
 
+from schemaconvertor import builtin_hooks
+
 __version__ = '0.3.1.0'
 
 
@@ -68,6 +70,9 @@ class SchemaConst(object):
     F_ENCODING = "encoding"
     F_DECODERR = "decoderrors"
     F_DESCRIPTION = "description"
+    F_HOOK = "hook"
+    F_HOOK_PRECONVERT = "pre-convert"
+    F_HOOK_POSTCONVERT = "post-convert"
 
     # field states
     S_UNDEFINED = None
@@ -76,6 +81,15 @@ class SchemaConst(object):
     # const values
     V_ENCODING = "utf-8"
     V_DECODERR = "strict"
+
+
+class SchemaBuiltinHook(object):
+    Pre_Convert_Hook = {
+        "format_date": builtin_hooks.format_date,
+        "func_result": builtin_hooks.func_result,
+    }
+    Post_Convert_Hook = {
+    }
 
 
 class Schema(object):
@@ -148,6 +162,17 @@ class Schema(object):
         self.decoderrors = schema.get(
             SchemaConst.F_DECODERR,
             self.parent.decoderrors if self.parent else SchemaConst.V_DECODERR)
+
+        self.hooks = schema.get(SchemaConst.F_HOOK, {})
+
+        self.hooks[SchemaConst.F_HOOK_PRECONVERT] = [
+            SchemaBuiltinHook.Pre_Convert_Hook.get(hook, hook)
+            for hook in self.hooks.get(SchemaConst.F_HOOK_PRECONVERT, [])
+        ]
+        self.hooks[SchemaConst.F_HOOK_POSTCONVERT] = [
+            SchemaBuiltinHook.Post_Convert_Hook.get(hook, hook)
+            for hook in self.hooks.get(SchemaConst.F_HOOK_POSTCONVERT, [])
+        ]
 
         self.compiled = True
 
@@ -225,7 +250,15 @@ class SchemaConvertor(object):
         if convertor is None:
             raise TypeError("Unknown type: %s" % schema.type)
 
-        return convertor(self, data, schema)
+        for hook in schema.hooks[SchemaConst.F_HOOK_PRECONVERT]:
+            data = hook(data, schema)
+
+        result = convertor(self, data, schema)
+
+        for hook in schema.hooks[SchemaConst.F_HOOK_POSTCONVERT]:
+            result = hook(result, schema)
+
+        return result
 
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, repr(self.schema))
