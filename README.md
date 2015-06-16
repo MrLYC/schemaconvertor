@@ -83,10 +83,10 @@ print convert_by_schema(user, schema)
 **items**字段仅在**type**为array时生效，用于描述序列中的每一项对应的Schema。
 
 #### properties
-**items**字段仅在**type**为dict或object时生效，指定给出的项的Schema（没有指定的项不会处理）。
+**properties**字段仅在**type**为dict或object时生效，指定给出的项的Schema（没有指定的项不会处理）。
 
 #### patternProperties
-**items**字段仅在**type**为dict或object时生效，指定符合给定的正则表达式的项的Schema（使用`re.search`匹配）。
+**patternProperties**字段仅在**type**为dict或object时生效，指定符合给定的正则表达式的项的Schema（使用`re.search`匹配）。
 
 ### 附加信息
 1. Schema使用lazy compile方式，仅在转换使用时自动编译，初始化代价极小。
