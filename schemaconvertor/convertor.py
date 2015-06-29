@@ -7,7 +7,7 @@ import collections
 
 from schemaconvertor import builtin_hooks
 
-__version__ = '0.3.1.0'
+__version__ = '0.3.1.1'
 
 
 def _type_convertor(type_):
