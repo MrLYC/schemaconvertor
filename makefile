@@ -43,3 +43,7 @@ pypi-upload:
 	$(PYTHON) setup.py clean
 	git tag `$(PYTHON) setup.py --version`
 	git rebase master dev
+
+author-config:
+	git config user.email saber_zodiac@sohu.com --local
+	git config user.name MrLYC --local
