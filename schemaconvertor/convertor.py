@@ -1,13 +1,24 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-import types
 import re
 import collections
 
 from schemaconvertor import builtin_hooks
 
-__version__ = '0.3.1.1'
+try:
+    unicode = unicode
+except NameError:
+    unicode = str
+
+
+class Types:
+    NoneType = type(None)
+    IntType = int
+    FloatType = float
+    BooleanType = bool
+
+__version__ = '0.3.1.2'
 
 
 def _type_convertor(type_):
@@ -97,7 +108,7 @@ class Schema(object):
     VERVERIFYREX = re.compile(r"0\.[1-3].*")
 
     def __init__(self, schema, parent=None):
-        if isinstance(schema, basestring):
+        if isinstance(schema, (str, unicode)):
             schema = {"type": schema}
 
         self.origin_schema = schema
@@ -141,9 +152,9 @@ class Schema(object):
         typeof_schemas = schema.get(SchemaConst.F_TYPEOF)
         self.typeof_schemas = SchemaConst.S_DISABLED \
             if typeof_schemas is None else {
-                types.NoneType if t is None else t: self.subschema(s)
+                Types.NoneType if t is None else t: self.subschema(s)
                 for t, s in typeof_schemas.iteritems()
-                if isinstance(t, (type, tuple, types.NoneType))
+                if isinstance(t, (type, tuple, Types.NoneType))
             }
         self.typeof_default_schema = SchemaConst.S_DISABLED \
             if typeof_schemas is None else self.subschema(typeof_schemas.get(
@@ -341,9 +352,9 @@ class SchemaConvertor(object):
 
     CONVERTORS = {
         SchemaConst.T_STR: _str_convertor,
-        SchemaConst.T_INT: _type_convertor(types.IntType),
-        SchemaConst.T_FLOAT: _type_convertor(types.FloatType),
-        SchemaConst.T_BOOL: _type_convertor(types.BooleanType),
+        SchemaConst.T_INT: _type_convertor(Types.IntType),
+        SchemaConst.T_FLOAT: _type_convertor(Types.FloatType),
+        SchemaConst.T_BOOL: _type_convertor(Types.BooleanType),
         SchemaConst.T_NUM: _number_convertor,
         SchemaConst.T_DICT: _dict_convertor,
         SchemaConst.T_OBJ: _object_convertor,

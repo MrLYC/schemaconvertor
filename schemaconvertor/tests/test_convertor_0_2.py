@@ -9,6 +9,11 @@ from schemaconvertor.convertor import (
 
 Pair = namedtuple("Pair", ["key", "value"])
 
+try:
+    unicode = unicode
+except NameError:
+    unicode = str
+
 
 class TestObjAsDictAdapter(TestCase):
     class Parent(object):
@@ -73,9 +78,9 @@ class TestObjAsDictAdapter(TestCase):
             child_dict.get("cinsval"))
 
         self.assertGreater(len(parent_dict), 0)
-        self.assertEqual(parent_dict.keys(), list(parent_dict.iterkeys()))
-        self.assertEqual(parent_dict.values(), list(parent_dict.itervalues()))
-        self.assertEqual(parent_dict.items(), list(parent_dict.iteritems()))
+        self.assertEqual(parent_dict.keys(), list(parent_dict.keys()))
+        self.assertEqual(parent_dict.values(), list(parent_dict.values()))
+        self.assertEqual(parent_dict.items(), list(parent_dict.items()))
         self.assertEqual(len(parent_dict), len(list(parent_dict)))
 
 
