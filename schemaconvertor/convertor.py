@@ -348,6 +348,9 @@ class SchemaConvertor(object):
             return data
 
         data = str(data)
+        if isinstance(data, unicode):
+            return data
+
         return data.decode(schema.encoding, schema.decoderrors)
 
     CONVERTORS = {
