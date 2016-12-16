@@ -78,9 +78,9 @@ class TestObjAsDictAdapter(TestCase):
             child_dict.get("cinsval"))
 
         self.assertGreater(len(parent_dict), 0)
-        self.assertEqual(parent_dict.keys(), list(parent_dict.keys()))
-        self.assertEqual(parent_dict.values(), list(parent_dict.values()))
-        self.assertEqual(parent_dict.items(), list(parent_dict.items()))
+        self.assertEqual(list(parent_dict.keys()), list(parent_dict.keys()))
+        self.assertEqual(list(parent_dict.values()), list(parent_dict.values()))
+        self.assertEqual(list(parent_dict.items()), list(parent_dict.items()))
         self.assertEqual(len(parent_dict), len(list(parent_dict)))
 
 
@@ -233,8 +233,10 @@ class TestSchemaConvertor(TestCase):
             "type": "string"
         })
         self.assertEqual(convertor(u"刘奕聪"), u"刘奕聪")
-        self.assertEqual(convertor(
-            u"刘奕聪".encode("utf-8")), u"刘奕聪".encode("utf-8"))
+        self.assertEqual(
+            convertor(b"\xe5\x88\x98\xe5\xa5\x95\xe8\x81\xaa"),
+            b"\xe5\x88\x98\xe5\xa5\x95\xe8\x81\xaa",
+        )
         self.assertEqual(convertor(None), None)
 
         convertor = SchemaConvertor({
@@ -251,7 +253,7 @@ class TestSchemaConvertor(TestCase):
         })
 
         with self.assertRaises(UnicodeDecodeError):
-            self.assertEqual(convertor(u"刘奕聪".encode("gbk")), u"刘奕聪")
+            self.assertEqual(convertor(b"\xc1\xf5\xde\xc8\xb4\xcf"), u"刘奕聪")
 
         convertor = SchemaConvertor({
             "encoding": "utf-8",
