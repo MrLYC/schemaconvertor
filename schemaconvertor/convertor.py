@@ -346,12 +346,10 @@ class SchemaConvertor(object):
 
         if isinstance(data, unicode):
             return data
-
-        data = str(data)
-        if isinstance(data, unicode):
-            return data
-
-        return data.decode(schema.encoding, schema.decoderrors)
+        elif isinstance(data, bytes):
+            return data.decode(schema.encoding, schema.decoderrors)
+        else:
+            return str(data)
 
     CONVERTORS = {
         SchemaConst.T_STR: _str_convertor,
