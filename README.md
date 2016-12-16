@@ -1,4 +1,7 @@
 # schemaconvertor
+
+[![Build Status](https://travis-ci.org/MrLYC/schemaconvertor.svg?branch=master)](https://travis-ci.org/MrLYC/schemaconvertor)  [![codecov](https://codecov.io/gh/MrLYC/schemaconvertor/branch/master/graph/badge.svg)](https://codecov.io/gh/MrLYC/schemaconvertor) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/0bbd9f94214444b5987a5bb68bdee589)](https://www.codacy.com/app/imyikong/schemaconvertor?utm_source=github.com&utm_medium=referral&utm_content=MrLYC/schemaconvertor&utm_campaign=Badge_Grade)
+
 **schemaconvertor**提供了一种使用schema来转换对象的方法，通过schema，可以指定该对象序列化的部分和对应的类型，其结果可以进一步序列化为json。
 
 安装：`pip install schemaconvertor`
@@ -58,18 +61,18 @@ print convert_by_schema(user, schema)
 #### type
 **type**字段指定对应待转换数据的最终类型，主要类型对应如下表：
 
-|     type     |     Python     |
-|:------------:|:--------------:|
-|    string    |     unicode    |
-|    object    |      dict      |
-|    integer   |      int       |
-|    float     |      float     |
-|    number    |    int/float   |
-|    boolean   |      bool      |
-|    dict      |      dict      |
-|    array     |      list      |
-|    null      |    NoneType    |
-|    raw       |     object     |
+|  type   |  Python   |
+| :-----: | :-------: |
+| string  |  unicode  |
+| object  |   dict    |
+| integer |    int    |
+|  float  |   float   |
+| number  | int/float |
+| boolean |   bool    |
+|  dict   |   dict    |
+|  array  |   list    |
+|  null   | NoneType  |
+|   raw   |  object   |
 
 **type**字段直接影响转换行为，因此基本上每个Schema都需指定**type**，为简化表达，当一个Schema仅有**type**一项时，可以直接使用**type**的值简化表示为Schema。
 
