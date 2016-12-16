@@ -1,13 +1,15 @@
 language: python
 sudo: true
 python:
-    - "2.7"
-    - "3.3"
-    - "3.4"
-    - "3.5"
+    - 2.7
+    - 3.3
+    - 3.4
+    - 3.5
+    - pypy
 install:
     - pip install pep8 pylint pytest
+    - pip install codecov
 script:
     - make test
 after_success:
-      - bash <(curl -s https://codecov.io/bash)
+      - codecov
