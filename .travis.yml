@@ -8,8 +8,8 @@ python:
     - pypy
 install:
     - pip install pep8 pylint pytest
-    - pip install codecov
+    - pip install codecov pytest-cov
 script:
-    - make test
+    - make ci-test
 after_success:
       - codecov

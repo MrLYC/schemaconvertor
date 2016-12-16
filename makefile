@@ -13,7 +13,7 @@ PIPINSTALL := $(PYENV) pip install -i http://pypi.douban.com/simple/
 
 -include $(DEVMKFILE)
 
-.PHONY: dev-mk clean full-clean pylint pylint-full test requires
+.PHONY: dev-mk clean full-clean pylint pylint-full test requires ci-test
 
 dev-mk:
 	@echo "\033[33mmake from $(DEVMKFILE)\033[0m"
@@ -32,6 +32,9 @@ pylint-full:
 
 test: pylint
 	$(PYTEST) $(SRCPATH)
+
+ci-test: pylint
+	$(PYTEST) --cov=./ $(SRCPATH)
 
 requires: $(ROOTPATH)/requirements.txt
 	$(PIPINSTALL) -r $(ROOTPATH)/requirements.txt
