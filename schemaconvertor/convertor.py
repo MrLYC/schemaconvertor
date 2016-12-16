@@ -146,14 +146,14 @@ class Schema(object):
         properties = schema.get(SchemaConst.F_PROPERTIES)
         self.properties_schemas = SchemaConst.S_DISABLED \
             if properties is None else {
-                k: self.subschema(s) for k, s in properties.iteritems()
+                k: self.subschema(s) for k, s in properties.items()
             }
 
         typeof_schemas = schema.get(SchemaConst.F_TYPEOF)
         self.typeof_schemas = SchemaConst.S_DISABLED \
             if typeof_schemas is None else {
                 Types.NoneType if t is None else t: self.subschema(s)
-                for t, s in typeof_schemas.iteritems()
+                for t, s in typeof_schemas.items()
                 if isinstance(t, (type, tuple, Types.NoneType))
             }
         self.typeof_default_schema = SchemaConst.S_DISABLED \
@@ -164,7 +164,7 @@ class Schema(object):
         self.pattern_properties_schemas = SchemaConst.S_DISABLED \
             if p_schemas is None else {
                 re.compile(p): self.subschema(s)
-                for p, s in p_schemas.iteritems()
+                for p, s in p_schemas.items()
             }
 
         self.encoding = schema.get(
@@ -216,7 +216,7 @@ class Schema(object):
         if sch is not SchemaConst.S_UNDEFINED:
             return sch
 
-        for typ, sch in self.typeof_schemas.iteritems():
+        for typ, sch in self.typeof_schemas.items():
             if isinstance(data, typ):
                 return sch
         return self.typeof_default_schema
@@ -230,7 +230,7 @@ class Schema(object):
             raise FieldMissError(
                 "field %s is miss" % SchemaConst.F_PATTERNPROPERTIES)
 
-        for rex, sch in self.pattern_properties_schemas.iteritems():
+        for rex, sch in self.pattern_properties_schemas.items():
             if rex.search(name):
                 return sch
         return SchemaConst.S_UNDEFINED
