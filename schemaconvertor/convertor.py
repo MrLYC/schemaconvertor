@@ -24,6 +24,7 @@ __version__ = '0.3.1.2'
 def _type_convertor(type_):
     """Type convertor builder
     """
+
     def _base_convertor(self, data, schema):
         """Convert data to given type
         """
@@ -37,6 +38,7 @@ FieldMissError = type("FieldMissError", (KeyError,), {})
 
 
 class ObjAsDictAdapter(collections.Mapping):
+
     def __init__(self, obj):
         self.__object = obj
 
@@ -105,7 +107,7 @@ class SchemaBuiltinHook(object):
 
 class Schema(object):
     VERSION = __version__
-    VERVERIFYREX = re.compile(r"0\.[1-3].*")
+    VERVERIFYREX = re.compile(r"0\.[1-3]\.*")
 
     def __init__(self, schema, parent=None):
         if isinstance(schema, (str, unicode)):
@@ -242,6 +244,7 @@ class Schema(object):
 
 
 class SchemaConvertor(object):
+
     def __init__(self, schema):
         if not isinstance(schema, Schema):
             schema = Schema(schema)

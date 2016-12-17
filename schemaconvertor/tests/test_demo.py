@@ -27,6 +27,7 @@ class Admin(User):
 
 
 class Book(object):
+
     def __init__(self, name, owners=()):
         self.owners = list(owners)
         self.name = name
@@ -135,6 +136,7 @@ FULLBOOKSCHEMA = {
 
 
 class TestUser(TestCase):
+
     def test_convert_User(self):
         user = User("lyc", "imyikong@gmail.com")
         self.assertDictEqual(convert_by_schema(user, FULLUSERSCHEMA), {
@@ -159,14 +161,16 @@ class TestUser(TestCase):
             User("u2", "xxx"),
         ]
 
-        self.assertLessEqual(convert_by_schema(user_lst, USERMIXTYPELISTSCHEMA), [
-            {"name": "u1"},
-            {"name": "a1", "wid": 1},
-            {"name": "u2"},
-        ])
+        self.assertLessEqual(
+            convert_by_schema(user_lst, USERMIXTYPELISTSCHEMA), [
+                {"name": "u1"},
+                {"name": "a1", "wid": 1},
+                {"name": "u2"},
+            ])
 
 
 class TestBook(TestCase):
+
     def test_convert_Book(self):
         user1 = User("u1", "xxx")
         admin1 = Admin("a1", "xxx", 2)
