@@ -1,4 +1,4 @@
-![schemaconvertor](logo.svg)
+![schemaconvertor](https://cdn.rawgit.com/MrLYC/schemaconvertor/master/logo.svg)
 
 [![Build Status](https://travis-ci.org/MrLYC/schemaconvertor.svg?branch=master)](https://travis-ci.org/MrLYC/schemaconvertor)  [![codecov](https://codecov.io/gh/MrLYC/schemaconvertor/branch/master/graph/badge.svg)](https://codecov.io/gh/MrLYC/schemaconvertor) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/0bbd9f94214444b5987a5bb68bdee589)](https://www.codacy.com/app/imyikong/schemaconvertor?utm_source=github.com&utm_medium=referral&utm_content=MrLYC/schemaconvertor&utm_campaign=Badge_Grade)
 
